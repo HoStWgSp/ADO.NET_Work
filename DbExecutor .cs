@@ -5,10 +5,10 @@ using MySql.Data.MySqlClient;
 
 namespace SkillFactory;
 
-internal class DbExecutor()
+internal class DbExecutor
 {
     private MainConnector mainConnector;
-    public DbExecutor(MainConnector mainConnector):this()
+    public DbExecutor(MainConnector mainConnector)
     {
         this.mainConnector = mainConnector;
     }
@@ -37,7 +37,48 @@ internal class DbExecutor()
         {
             return reader;
         }
-
         return null;
     }
+    public int DeleteByColumn(string table, string column, string value)
+    {
+        MySqlCommand mySqlCommand = new MySqlCommand()
+        {
+            CommandType = CommandType.Text,
+            CommandText = "delete from " + table + " where " + column + " = '" + value + "';",
+            Connection = mainConnector.GetConnection(),
+        };
+        return mySqlCommand.ExecuteNonQuery();
+    }
+    public int ExecProcedureAdding(string name, string login) 
+    {
+        MySqlCommand mySqlCommand = new MySqlCommand 
+        {
+            CommandType = CommandType.StoredProcedure,
+            CommandText = "AddingUserProc",
+            Connection = mainConnector.GetConnection(),
+        };
+
+        mySqlCommand.Parameters.Add(new MySqlParameter("UserName", name));
+        mySqlCommand.Parameters.Add(new MySqlParameter("Login", login));
+
+
+        int r = mySqlCommand.ExecuteNonQuery();
+        return r;
+    }
+    public int UpdateByColumn(string table, string columntocheck,
+    string valuecheck, string columntoupdate, string valueupdate)
+    {
+        MySqlCommand mySqlCommand = new MySqlCommand()
+        {
+            CommandType = CommandType.Text,
+            CommandText = @$"update {table} set {columntoupdate} = '{valueupdate}'  
+                            where {columntocheck} = '{valuecheck}';",
+            Connection = mainConnector.GetConnection(),
+        };
+        return mySqlCommand.ExecuteNonQuery();
+    }
+    
+
+
+
 } 

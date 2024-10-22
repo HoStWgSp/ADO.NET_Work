@@ -1,71 +1,155 @@
 ﻿
-using System.Data;
-using MySql.Data.MySqlClient;
 
 namespace SkillFactory;
 
 class Program
 {
-    static void Main(string[] args)
+        static Manager manager;
+        static void Main(string[] args)
+        {
+            // Создаем контекст для добавления данных
+        using (var db = new AppContext())
+        {
+            // Пересоздаем базу
+            //db.Database.EnsureDeleted();
+            //db.Database.EnsureCreated();
+
+            // Заполняем данными
+            Company company1 = new Company { Name = "SF" };
+            Company company2 = new Company { Name = "VK" };
+            Company company3 = new Company { Name = "FB" };
+            db.Companies.AddRange(company1, company2, company3);
+
+            UserData user1 = new UserData { Name = "Arthur", Role = "Admin", Company = company1 };
+            UserData user2 = new UserData { Name = "Bob", Role = "Admin", Company = company2 };
+            UserData user3 = new UserData { Name = "Clark", Role = "User", Company = company2 };
+            UserData user4 = new UserData { Name = "Dan", Role = "User", Company = company3 };
+
+            db.Users.AddRange(user1, user2, user3, user4);
+
+            db.SaveChanges();
+        }
+
+        // Создаем контекст для выбора данных
+        using (var db = new AppContext())
+        {
+            var usersQuery =
+                from user in db.Users
+                where user.CompanyId == 2
+                select user;
+
+            var users = usersQuery.ToList();
+
+            foreach (var user in users)
+            {
+                // Вывод Id пользователей
+                Console.WriteLine(user.Id);
+            }
+        }
+    }
+
+
+
+
+
+    static void ManagerWork()
     {
-        MainConnector mainConnector = new MainConnector();
-        DataTable data = new DataTable();
-        DbExecutor db = new DbExecutor(mainConnector);
-        string tablename = "NetworkUser";
+        manager = new Manager();
 
-        Task<bool> result = mainConnector.ConnectAsync("127.0.0.1", "MyTest", "evgeny", "Vtcnj!21");
-        
-        if (result.Result) 
+        manager.Connect("127.0.0.1", "MyTest", "evgeny", "Vtcnj!21");
+
+        CommandsList();
+
+        string command;
+        do 
         {
-            Console.WriteLine("Подключено успешно!"); 
-            Console.WriteLine("Получаем данные таблицы " + tablename);
-            data = db.SelectAll(tablename);
-            Console.WriteLine("Отключаем БД!");
-            //mainConnector.DisconnectAsync();
-        }
-        else Console.WriteLine("Ошибка подключения!");
-
-        Console.WriteLine("Количество строк в " + data.TableName + ": " + data.Rows.Count);
-
-        foreach(DataColumn column in data.Columns) Console.Write($"{column.ColumnName}\t");
-        Console.WriteLine();
-
-
-        foreach(DataRow row in data.Rows) 
-        {
-            var cells = row.ItemArray;
-            foreach(var cell in cells) 
-            {
-                Console.Write($"{row[data.Columns[0].ColumnName]}\t");
-            }
             Console.WriteLine();
-        }
-        
-        MySqlDataReader reader = db.SelectAllCommandReader(tablename);
-
-        var columnList = new List < string > ();
-
-        for (int i = 0; i < reader.FieldCount; i++) 
-        {
-            var name = reader.GetName(i);
-            columnList.Add(name);
-        }
-
-        for (int i = 0; i < columnList.Count; i++) 
-        {
-            Console.Write($"{columnList[i]}\t");
-        }
-        Console.WriteLine();
-
-        while (reader.Read()) 
-        {
-            for (int i = 0; i < columnList.Count; i++) 
+            CommandsList();
+            command = Console.ReadLine();
+            Console.WriteLine();
+            switch (command) 
             {
-                var value = reader[columnList[i]];
-                Console.Write($"{value}\t");
+                case
+                nameof(Commands.add): 
+                { 
+                    Add(); 
+                    break; 
+                }
+                case
+                nameof(Commands.delete): 
+                {
+                    Delete();
+                    break;
+                }
+                case
+                nameof(Commands.update): 
+                {
+                    Update();
+                    break;
+                }
+                case
+                nameof(Commands.show): 
+                {
+                    manager.ShowData();
+                    break;
+                }
             }
+        } 
+        while (command != nameof(Commands.stop));
+    }
+    static void CommandsList()
+    {
+        Console.WriteLine("Список команд для работы консоли:");
+        Console.WriteLine(Commands.stop + ": прекращение работы");
+        Console.WriteLine(Commands.add + ": добавление данных");
+        Console.WriteLine(Commands.delete + ": удаление данных");
+        Console.WriteLine(Commands.update + ": обновление данных");
+        Console.WriteLine(Commands.show + ": просмотр данных");
+    }
+    public enum Commands 
+    {
+        stop,
+        add,
+        delete,
+        update,
+        show
+    }
+    static void Add() 
+    {
+        Console.WriteLine("Введите логин для добавления:");
 
-        Console.WriteLine();
-        }
+        var login = Console.ReadLine();
+
+        Console.WriteLine("Введите имя для добавления:");
+        var name = Console.ReadLine();
+
+        manager.AddUser(name, login);
+
+        manager.ShowData();
+    }
+    static void Update() 
+    {
+        Console.WriteLine("Введите логин для обновления:");
+
+        var login = Console.ReadLine();
+
+        Console.WriteLine("Введите имя для обновления:");
+        var name = Console.ReadLine();
+
+        var count = manager.UpdateUserByLogin(login, name);
+
+        Console.WriteLine("Строк обновлено" + count);
+
+        manager.ShowData();
+    }
+    static void Delete() 
+    {
+        Console.WriteLine("Введите логин для удаления:");
+
+        var count = manager.DeleteUserByLogin(Console.ReadLine());
+
+        Console.WriteLine("Количество удаленных строк " + count);
+
+        manager.ShowData();
     }
 }

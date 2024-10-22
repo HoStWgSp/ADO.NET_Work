@@ -3,7 +3,7 @@ using System.Data;
 
 namespace SkillFactory;
 
-internal class MainConnector()
+internal class MainConnector
 {
     private MySqlConnection mySqlConnection;    
 

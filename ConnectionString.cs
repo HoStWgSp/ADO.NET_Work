@@ -3,7 +3,7 @@ using MySql.Data.MySqlClient;
 
 namespace SkillFactory;
 
-internal class ConnectionString()
+internal class ConnectionString
 {
 
     private static MySqlConnectionStringBuilder mySqlConnectionStringBuilder;
